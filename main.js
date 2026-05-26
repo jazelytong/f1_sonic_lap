@@ -121,8 +121,7 @@ function buildTelemetryChart() {
     .append('svg')
     .attr('class', 'tel-svg')
     .attr('viewBox', `0 0 ${W} ${totalH}`)
-    .attr('width', W)
-    .attr('height', totalH);
+    .attr('width', '100%');
 
   const g = svg.append('g').attr('transform', `translate(${marginL},${marginT})`);
 
@@ -247,7 +246,7 @@ function updateReadout(idx) {
   document.getElementById('r-speed').textContent = Math.round(d.speed) + ' km/h';
   document.getElementById('r-gear').textContent = d.gear;
   document.getElementById('r-throttle').textContent = Math.round(d.throttle) + ' %';
-  document.getElementById('r-brake').textContent = d.brake ? 'ON' : 'OFF';
+  document.getElementById('r-brake').textContent = Math.round(d.brakePct) + ' %';
 }
 
 function getTel() {
@@ -266,16 +265,16 @@ function buildTrackMap() {
   const container = document.getElementById('track-map');
   container.innerHTML = '';
 
-  const pos = state.data.drivers.VER.position;
-  const tel = state.data.drivers.VER.telemetry;
+  const pos = state.data.drivers[state.activeDriver].position;
+  const tel = state.data.drivers[state.activeDriver].telemetry;
   if (!pos || pos.length === 0) return;
 
   const xs = pos.map(d => d.x), ys = pos.map(d => d.y);
   const [xMin, xMax] = d3.extent(xs);
   const [yMin, yMax] = d3.extent(ys);
-  const W = 420, PAD = 24;
+  const W = 420, PAD = 24, LEGEND_PAD = 22;
   const scale = Math.min((W - PAD * 2) / (xMax - xMin), (W - PAD * 2) / (yMax - yMin));
-  const H = Math.round((yMax - yMin) * scale + PAD * 2);
+  const H = Math.round((yMax - yMin) * scale + PAD * 2 + LEGEND_PAD);
 
   const toX = x => (x - xMin) * scale + PAD;
   const toY = y => H - ((y - yMin) * scale + PAD); // flip Y
@@ -320,6 +319,29 @@ function buildTrackMap() {
     .attr('r', 7)
     .attr('cx', toX(pos[0].x))
     .attr('cy', toY(pos[0].y));
+
+  // Speed legend (bottom-left)
+  const legendW = 100, legendH = 10, legendX = PAD, legendY = H - PAD + 4;
+  const defs = svg.append('defs');
+  const grad = defs.append('linearGradient').attr('id', 'speed-grad');
+  const nStops = 6;
+  d3.range(nStops).forEach(i => {
+    grad.append('stop')
+      .attr('offset', `${(i / (nStops - 1)) * 100}%`)
+      .attr('stop-color', colorScale(sMin + (i / (nStops - 1)) * (sMax - sMin)));
+  });
+  svg.append('rect')
+    .attr('x', legendX).attr('y', legendY)
+    .attr('width', legendW).attr('height', legendH)
+    .attr('fill', 'url(#speed-grad)').attr('rx', 2);
+  svg.append('text').attr('x', legendX).attr('y', legendY - 3)
+    .attr('fill', '#888').attr('font-size', 9)
+    .attr('font-family', "'Barlow Condensed', sans-serif")
+    .text(`${Math.round(sMin)} km/h`);
+  svg.append('text').attr('x', legendX + legendW).attr('y', legendY - 3)
+    .attr('fill', '#888').attr('font-size', 9).attr('text-anchor', 'end')
+    .attr('font-family', "'Barlow Condensed', sans-serif")
+    .text(`${Math.round(sMax)} km/h`);
 
   trackChart = { pos, dot, toX, toY };
 }
@@ -371,7 +393,7 @@ function buildScatterChart() {
 
   const svg = d3.select(container).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`)
-    .attr('width', W);
+    .attr('width', '100%');
 
   const g = svg.append('g').attr('transform', `translate(${marginL},${marginT})`);
 
@@ -459,17 +481,6 @@ function buildDeltaChart() {
   const nPoints = 600;
   const distCommon = d3.range(nPoints).map(i => (i / (nPoints - 1)) * maxDist);
 
-  const interpA = distCommon.map(d => d3.interpolate(0, tA[tA.length - 1])(
-    (() => {
-      // linear interpolation using distA
-      let lo = 0, hi = distA.length - 1;
-      while (lo < hi - 1) { const mid = (lo + hi) >> 1; distA[mid] < d ? lo = mid : hi = mid; }
-      const t = (d - distA[lo]) / (distA[hi] - distA[lo]);
-      return tA[lo] + t * (tA[hi] - tA[lo]);
-    })()
-  ));
-
-  // Actually just do the interpolation properly
   function interpTime(dist, distArr, tArr) {
     if (dist <= distArr[0]) return tArr[0];
     if (dist >= distArr[distArr.length - 1]) return tArr[tArr.length - 1];
@@ -491,7 +502,7 @@ function buildDeltaChart() {
 
   const svg = d3.select(container).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`)
-    .attr('width', W);
+    .attr('width', '100%');
 
   const g = svg.append('g').attr('transform', `translate(${marginL},${marginT})`);
 
@@ -569,9 +580,9 @@ function initAudio() {
   rumble = new Tone.Oscillator({
     type: 'sine',
     frequency: 50,
-  }).connect(masterVol);
+  });
 
-  // Rumble gain
+  // Rumble gain — connects rumble through a controllable gain before masterVol
   const rumbleGain = new Tone.Gain(0).connect(masterVol);
   rumble.connect(rumbleGain);
   state.rumbleGain = rumbleGain;
@@ -663,14 +674,19 @@ function stopPlayback() {
 // ══════════════════════════════════════════════════════════════════════
 //  BUTTONS & TABS
 // ══════════════════════════════════════════════════════════════════════
+function setActiveDriver(driver) {
+  stopPlayback();
+  state.activeDriver = driver;
+  state.playbackIndex = 0;
+  updateTabs();
+  rebuildTelemetry();
+  updateTrackDot(0);
+}
+
 function bindButtons() {
   document.getElementById('playA').addEventListener('click', async () => {
     await ensureToneStarted();
-    stopPlayback();
-    state.activeDriver = 'VER';
-    state.playbackIndex = 0;
-    updateTabs();
-    rebuildTelemetry();
+    setActiveDriver('VER');
     setStatus('Playing Verstappen…');
     document.getElementById('playA').classList.add('playing');
     startPlayback();
@@ -678,11 +694,7 @@ function bindButtons() {
 
   document.getElementById('playB').addEventListener('click', async () => {
     await ensureToneStarted();
-    stopPlayback();
-    state.activeDriver = 'PER';
-    state.playbackIndex = 0;
-    updateTabs();
-    rebuildTelemetry();
+    setActiveDriver('PER');
     setStatus('Playing Perez…');
     document.getElementById('playB').classList.add('playing');
     startPlayback();
@@ -696,11 +708,7 @@ function bindButtons() {
 function bindTabs() {
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      state.activeDriver = tab.dataset.driver;
-      state.playbackIndex = 0;
-      updateTabs();
-      rebuildTelemetry();
-      updateTrackDot(0);
+      setActiveDriver(tab.dataset.driver);
     });
   });
 }

@@ -308,6 +308,7 @@ h3 {
 }
 
 /* ===== SCATTER ===== */
+#scatter-chart { width: 100%; }
 #scatter-chart svg { width: 100%; height: auto; overflow: visible; }
 
 .scatter-dot {
@@ -325,6 +326,7 @@ h3 {
 }
 
 /* ===== DELTA ===== */
+#delta-chart { width: 100%; }
 #delta-chart svg { width: 100%; height: auto; }
 
 /* ===== TOOLTIP ===== */
