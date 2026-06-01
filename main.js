@@ -272,7 +272,8 @@ function buildTrackMap() {
   const xs = pos.map(d => d.x), ys = pos.map(d => d.y);
   const [xMin, xMax] = d3.extent(xs);
   const [yMin, yMax] = d3.extent(ys);
-  const W = 420, PAD = 24, LEGEND_PAD = 22;
+  const W = container.clientWidth || 200; // Use container width
+  const PAD = 16, LEGEND_PAD = 18;
   const scale = Math.min((W - PAD * 2) / (xMax - xMin), (W - PAD * 2) / (yMax - yMin));
   const H = Math.round((yMax - yMin) * scale + PAD * 2 + LEGEND_PAD);
 
@@ -293,13 +294,13 @@ function buildTrackMap() {
     .attr('viewBox', `0 0 ${W} ${H}`)
     .attr('width', '100%');
 
-  // Track background (thicker black stroke)
+  // Track background
   const lineGen = d3.line().x(d => toX(d.x)).y(d => toY(d.y)).curve(d3.curveCatmullRom.alpha(0.5));
   svg.append('path')
     .datum(pos)
     .attr('fill', 'none')
     .attr('stroke', '#333')
-    .attr('stroke-width', 9)
+    .attr('stroke-width', 7)
     .attr('stroke-linecap', 'round')
     .attr('d', lineGen);
 
@@ -309,19 +310,19 @@ function buildTrackMap() {
       .attr('x1', toX(pos[i].x)).attr('y1', toY(pos[i].y))
       .attr('x2', toX(pos[i + 1].x)).attr('y2', toY(pos[i + 1].y))
       .attr('stroke', colorScale(speeds[i]))
-      .attr('stroke-width', 4)
+      .attr('stroke-width', 3)
       .attr('stroke-linecap', 'round');
   }
 
   // Moving dot
   const dot = svg.append('circle')
     .attr('class', 'track-dot')
-    .attr('r', 7)
+    .attr('r', 6)
     .attr('cx', toX(pos[0].x))
     .attr('cy', toY(pos[0].y));
 
-  // Speed legend (bottom-left)
-  const legendW = 100, legendH = 10, legendX = PAD, legendY = H - PAD + 4;
+  // Speed legend
+  const legendW = 80, legendH = 8, legendX = PAD, legendY = H - PAD + 2;
   const defs = svg.append('defs');
   const grad = defs.append('linearGradient').attr('id', 'speed-grad');
   const nStops = 6;
@@ -334,12 +335,12 @@ function buildTrackMap() {
     .attr('x', legendX).attr('y', legendY)
     .attr('width', legendW).attr('height', legendH)
     .attr('fill', 'url(#speed-grad)').attr('rx', 2);
-  svg.append('text').attr('x', legendX).attr('y', legendY - 3)
-    .attr('fill', '#888').attr('font-size', 9)
+  svg.append('text').attr('x', legendX).attr('y', legendY - 2)
+    .attr('fill', '#888').attr('font-size', 8)
     .attr('font-family', "'Barlow Condensed', sans-serif")
     .text(`${Math.round(sMin)} km/h`);
-  svg.append('text').attr('x', legendX + legendW).attr('y', legendY - 3)
-    .attr('fill', '#888').attr('font-size', 9).attr('text-anchor', 'end')
+  svg.append('text').attr('x', legendX + legendW).attr('y', legendY - 2)
+    .attr('fill', '#888').attr('font-size', 8).attr('text-anchor', 'end')
     .attr('font-family', "'Barlow Condensed', sans-serif")
     .text(`${Math.round(sMax)} km/h`);
 
@@ -380,7 +381,7 @@ function buildScatterChart() {
 
   const W = container.clientWidth || 480;
   const H = 320;
-  const marginL = 60, marginR = 24, marginT = 16, marginB = 48;
+  const marginL = 60, marginR = 24, marginT = 45, marginB = 48;
   const innerW = W - marginL - marginR;
   const innerH = H - marginT - marginB;
 
@@ -465,9 +466,9 @@ function buildDeltaChart() {
   const telB = state.data.drivers.PER.telemetry;
   if (!telA || !telB) return;
 
-  const W = container.clientWidth || 900;
-  const H = 180;
-  const marginL = 56, marginR = 16, marginT = 16, marginB = 40;
+  const W = container.clientWidth || 450;
+  const H = 320;
+  const marginL = 56, marginR = 16, marginT = 45, marginB = 40;
   const innerW = W - marginL - marginR;
   const innerH = H - marginT - marginB;
 
@@ -546,14 +547,63 @@ function buildDeltaChart() {
     .attr('fill', 'none').attr('stroke', '#ccc').attr('stroke-width', 1.5).attr('d', lineGen);
 
   // Legend
-  const leg = g.append('g').attr('transform', `translate(${innerW - 180}, 4)`);
+  const leg = g.append('g').attr('transform', `translate(${innerW - 105}, -40)`);
+  
+  // Legend background
+  leg.append('rect')
+    .attr('x', -8).attr('y', -8)
+    .attr('width', 110).attr('height', 42)
+    .attr('fill', 'rgba(0,0,0,0.3)')
+    .attr('rx', 4);
+
   [['VER ahead', COLOR.ver], ['PER ahead', COLOR.per]].forEach(([label, color], i) => {
     leg.append('rect').attr('x', 0).attr('y', i * 18).attr('width', 12).attr('height', 12)
-      .attr('fill', color).attr('opacity', 0.7).attr('rx', 2);
+      .attr('fill', color).attr('opacity', 0.9).attr('rx', 2);
     leg.append('text').attr('x', 18).attr('y', i * 18 + 10)
-      .attr('fill', '#888').attr('font-size', 12)
-      .attr('font-family', "'Barlow', sans-serif")
+      .attr('fill', '#eee').attr('font-size', 11)
+      .attr('font-family', "'Barlow Condensed', sans-serif")
+      .attr('font-weight', 500)
       .text(label);
+  });
+
+  // Tooltip & Hover Overlay
+  const tooltipLine = g.append('line')
+    .attr('stroke', 'rgba(255,255,255,0.4)')
+    .attr('stroke-width', 1)
+    .attr('y1', 0)
+    .attr('y2', innerH)
+    .style('opacity', 0);
+
+  const overlay = g.append('rect')
+    .attr('width', innerW)
+    .attr('height', innerH)
+    .attr('fill', 'transparent');
+
+  overlay.on('mousemove', function(event) {
+    const [mx] = d3.pointer(event);
+    const distVal = xScale.invert(mx);
+    
+    // Find nearest data point
+    let best = deltaData[0], minDiff = Infinity;
+    deltaData.forEach(d => {
+      const diff = Math.abs(d.dist/1000 - distVal);
+      if (diff < minDiff) { minDiff = diff; best = d; }
+    });
+
+    const x = xScale(best.dist/1000);
+    tooltipLine.attr('x1', x).attr('x2', x).style('opacity', 1);
+    
+    const driver = best.delta < 0 ? 'VER' : 'PER';
+    const absDelta = Math.abs(best.delta).toFixed(3);
+    
+    showTip(event.clientX, event.clientY, 
+      `<strong>Dist:</strong> ${(best.dist/1000).toFixed(2)} km<br>` +
+      `<strong>Gap:</strong> ${absDelta}s ${driver} leads`);
+  });
+
+  overlay.on('mouseleave', () => {
+    tooltipLine.style('opacity', 0);
+    hideTip();
   });
 
   // Axis labels
@@ -632,6 +682,8 @@ function startPlayback() {
   const startT = tel[state.playbackIndex].t;
   const endT = tel[tel.length - 1].t;
 
+  updateButtonUI();
+
   function frame() {
     if (!state.isPlaying) return;
 
@@ -667,8 +719,24 @@ function stopPlayback() {
   state.isPlaying = false;
   if (state.playbackRAF) cancelAnimationFrame(state.playbackRAF);
   if (masterVol) masterVol.volume.rampTo(-60, 0.3);
-  document.querySelectorAll('.btn').forEach(b => b.classList.remove('playing'));
+  updateButtonUI();
   setStatus('Stopped.');
+}
+
+function updateButtonUI() {
+  const pPlay = document.getElementById('player-play');
+  if (pPlay) pPlay.textContent = state.isPlaying ? '■' : '▶';
+
+  const btnA = document.getElementById('playA');
+  const btnB = document.getElementById('playB');
+  
+  if (btnA && btnB) {
+    btnA.textContent = (state.isPlaying && state.activeDriver === 'VER') ? '■ Verstappen' : '▶ Verstappen';
+    btnB.textContent = (state.isPlaying && state.activeDriver === 'PER') ? '■ Perez' : '▶ Perez';
+    
+    btnA.classList.toggle('playing', state.isPlaying && state.activeDriver === 'VER');
+    btnB.classList.toggle('playing', state.isPlaying && state.activeDriver === 'PER');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -684,24 +752,35 @@ function setActiveDriver(driver) {
 }
 
 function bindButtons() {
-  document.getElementById('playA').addEventListener('click', async () => {
-    await ensureToneStarted();
-    setActiveDriver('VER');
-    setStatus('Playing Verstappen…');
-    document.getElementById('playA').classList.add('playing');
-    startPlayback();
-  });
+  const handleToggle = async (driver) => {
+    if (state.isPlaying && (!driver || state.activeDriver === driver)) {
+      stopPlayback();
+    } else {
+      await ensureToneStarted();
+      if (driver) {
+        setActiveDriver(driver);
+        setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
+      } else {
+        setStatus(`Playing ${state.activeDriver}…`);
+      }
+      startPlayback();
+    }
+  };
 
-  document.getElementById('playB').addEventListener('click', async () => {
-    await ensureToneStarted();
-    setActiveDriver('PER');
-    setStatus('Playing Perez…');
-    document.getElementById('playB').classList.add('playing');
-    startPlayback();
-  });
+  document.getElementById('playA').addEventListener('click', () => handleToggle('VER'));
+  document.getElementById('playB').addEventListener('click', () => handleToggle('PER'));
+  
+  const pPlay = document.getElementById('player-play');
+  if (pPlay) pPlay.addEventListener('click', () => handleToggle(null));
 
-  document.getElementById('stop').addEventListener('click', () => {
+  const pReset = document.getElementById('player-reset');
+  if (pReset) pReset.addEventListener('click', () => {
     stopPlayback();
+    state.playbackIndex = 0;
+    movePlayhead(0);
+    updateReadout(0);
+    updateTrackDot(0);
+    setStatus('Reset to start.');
   });
 }
 
@@ -728,3 +807,6 @@ function rebuildTelemetry() {
 //  INIT
 // ══════════════════════════════════════════════════════════════════════
 loadData();
+
+loadData();
+;

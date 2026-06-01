@@ -22,7 +22,6 @@
       <div class="controls-hero">
         <button id="playA" class="btn btn-ver">▶ Verstappen</button>
         <button id="playB" class="btn btn-per">▶ Perez</button>
-        <button id="stop" class="btn btn-stop">■ Stop</button>
       </div>
       <p id="status" class="status-msg">Loading telemetry data…</p>
     </div>
@@ -41,12 +40,24 @@
         </div>
       </div>
 
-      <div class="driver-tabs">
-        <button class="tab active" data-driver="VER">VER <span class="laptime" id="ver-time">—</span></button>
-        <button class="tab" data-driver="PER">PER <span class="laptime" id="per-time">—</span></button>
+      <div class="player-controls-row">
+        <div class="driver-tabs">
+          <button class="tab active" data-driver="VER">VER <span class="laptime" id="ver-time">—</span></button>
+          <button class="tab" data-driver="PER">PER <span class="laptime" id="per-time">—</span></button>
+        </div>
+
+        <div class="playback-controls">
+          <button id="player-play" class="btn-icon" title="Toggle Play/Stop">▶</button>
+          <button id="player-reset" class="btn-icon" title="Reset to start">↺</button>
+        </div>
       </div>
 
-      <div id="telemetry-chart"></div>
+      <div class="telemetry-layout">
+        <div id="telemetry-chart"></div>
+        <div id="mini-map-container">
+          <div id="track-map"></div>
+        </div>
+      </div>
 
       <div id="readout" class="readout">
         <div><b>RPM</b><span id="r-rpm">—</span></div>
@@ -57,23 +68,12 @@
       </div>
     </section>
 
-    <!-- SECTION 2: TRACK MINIMAP -->
+    <!-- SECTION 2: SECONDARY CHARTS -->
     <section class="card-grid">
-      <div class="card" id="section-map">
-        <div class="section-header">
-          <span class="section-num">02</span>
-          <div>
-            <h2>Track Minimap</h2>
-            <p class="section-desc">Spa-Francorchamps coloured by speed. The dot follows playback.</p>
-          </div>
-        </div>
-        <div id="track-map"></div>
-      </div>
-
-      <!-- SECTION 3: SCATTER -->
+      <!-- SCATTER -->
       <div class="card" id="section-scatter">
         <div class="section-header">
-          <span class="section-num">03</span>
+          <span class="section-num">02</span>
           <div>
             <h2>Smoothness vs. Lap Time</h2>
             <p class="section-desc">Smoother inputs = faster laps. Hover a dot to see the driver.</p>
@@ -82,18 +82,18 @@
         <div id="scatter-chart"></div>
         <p class="annotation">↗ Smoother drivers cluster toward the bottom-left. VER and PER are highlighted in gold.</p>
       </div>
-    </section>
 
-    <!-- SECTION 4: DELTA -->
-    <section class="card" id="section-delta">
-      <div class="section-header">
-        <span class="section-num">04</span>
-        <div>
-          <h2>Where the Lap is Won</h2>
-          <p class="section-desc">Cumulative time gap between VER and PER vs distance around the circuit. Red = VER leads, Blue = PER leads.</p>
+      <!-- DELTA -->
+      <div class="card" id="section-delta">
+        <div class="section-header">
+          <span class="section-num">03</span>
+          <div>
+            <h2>Where the Lap is Won</h2>
+            <p class="section-desc">Cumulative time gap between VER and PER. Red = VER leads, Blue = PER leads.</p>
+          </div>
         </div>
+        <div id="delta-chart"></div>
       </div>
-      <div id="delta-chart"></div>
     </section>
 
     <!-- WRITEUP -->
