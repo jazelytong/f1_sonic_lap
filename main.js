@@ -692,12 +692,15 @@ function startPlayback() {
 
     if (t >= endT) {
       stopPlayback();
-      setStatus('Playback complete.');
+      state.playbackIndex = 0;
+      movePlayhead(0);
+      updateTrackDot(0);
+      setStatus('Playback complete. Press play to replay.');
       return;
     }
 
-    // Find index for t
-    let lo = state.playbackStartIndex, hi = tel.length - 1;
+    // Find index for t (always search full array so replay/seek works)
+    let lo = 0, hi = tel.length - 1;
     while (lo < hi - 1) {
       const mid = (lo + hi) >> 1;
       tel[mid].t < t ? lo = mid : hi = mid;
@@ -753,16 +756,21 @@ function setActiveDriver(driver) {
 
 function bindButtons() {
   const handleToggle = async (driver) => {
-    if (state.isPlaying && (!driver || state.activeDriver === driver)) {
+    // If switching to a different driver, always stop then start fresh
+    if (driver && driver !== state.activeDriver) {
+      await ensureToneStarted();
+      setActiveDriver(driver);
+      setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
+      startPlayback();
+      return;
+    }
+    // Same driver (or no driver arg = in-card play button): toggle play/pause
+    if (state.isPlaying) {
       stopPlayback();
     } else {
       await ensureToneStarted();
-      if (driver) {
-        setActiveDriver(driver);
-        setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
-      } else {
-        setStatus(`Playing ${state.activeDriver}…`);
-      }
+      if (driver) setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
+      else setStatus(`Playing ${state.activeDriver}…`);
       startPlayback();
     }
   };
@@ -808,5 +816,3 @@ function rebuildTelemetry() {
 // ══════════════════════════════════════════════════════════════════════
 loadData();
 
-loadData();
-;
