@@ -720,8 +720,15 @@ function startPlayback() {
 
 function stopPlayback() {
   state.isPlaying = false;
-  if (state.playbackRAF) cancelAnimationFrame(state.playbackRAF);
-  if (masterVol) masterVol.volume.rampTo(-60, 0.3);
+  if (state.playbackRAF) {
+    cancelAnimationFrame(state.playbackRAF);
+    state.playbackRAF = null;
+  }
+  // Cut audio instantly — no fade, no linger
+  if (synth) { try { synth.stop(); } catch(e) {} }
+  if (rumble) { try { rumble.stop(); } catch(e) {} }
+  if (state.rumbleGain) state.rumbleGain.gain.cancelScheduledValues(Tone.now());
+  state.toneStarted = false; // force re-start next time so oscillators restart cleanly
   updateButtonUI();
   setStatus('Stopped.');
 }
