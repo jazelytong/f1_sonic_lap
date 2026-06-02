@@ -641,9 +641,23 @@ function initAudio() {
 async function ensureToneStarted() {
   if (!state.toneStarted) {
     await Tone.start();
-    state.toneStarted = true;
+
+    // Dispose old nodes — a stopped Tone.js oscillator cannot be restarted
+    if (synth) { try { synth.dispose(); } catch(e) {} }
+    if (rumble) { try { rumble.dispose(); } catch(e) {} }
+    if (state.rumbleGain) { try { state.rumbleGain.dispose(); } catch(e) {} }
+    if (masterVol) { try { masterVol.dispose(); } catch(e) {} }
+
+    // Build fresh nodes every time
+    masterVol = new Tone.Volume(-6).toDestination();
+    synth = new Tone.Oscillator({ type: 'sawtooth', frequency: 220 }).connect(masterVol);
+    const rumbleGain = new Tone.Gain(0).connect(masterVol);
+    rumble = new Tone.Oscillator({ type: 'sine', frequency: 50 }).connect(rumbleGain);
+    state.rumbleGain = rumbleGain;
+
     synth.start();
     rumble.start();
+    state.toneStarted = true;
   }
 }
 
@@ -822,4 +836,3 @@ function rebuildTelemetry() {
 //  INIT
 // ══════════════════════════════════════════════════════════════════════
 loadData();
-
