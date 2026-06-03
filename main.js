@@ -685,7 +685,12 @@ function setAudioFromIndex(idx) {
 //  PLAYBACK LOOP
 // ══════════════════════════════════════════════════════════════════════
 function startPlayback() {
-  if (state.isPlaying) stopPlayback();
+  // Cancel any existing RAF loop without killing audio nodes
+  if (state.playbackRAF) {
+    cancelAnimationFrame(state.playbackRAF);
+    state.playbackRAF = null;
+  }
+  state.isPlaying = false;
   const tel = getTel();
   if (!tel) return;
 
@@ -738,12 +743,10 @@ function stopPlayback() {
     cancelAnimationFrame(state.playbackRAF);
     state.playbackRAF = null;
   }
-  // Cut audio instantly — no fade, no linger
-  if (synth) { try { synth.stop(); } catch(e) {} }
-  if (rumble) { try { rumble.stop(); } catch(e) {} }
-  if (state.rumbleGain) state.rumbleGain.gain.cancelScheduledValues(Tone.now());
-  // Reset toneStarted so ensureToneStarted() will rebuild fresh oscillators on next play
-  state.toneStarted = false;
+  // Silence audio params without stopping/disposing oscillators
+  // (Tone.js oscillators can't be restarted once stopped — disposal is handled by ensureToneStarted)
+  if (masterVol) { try { masterVol.volume.rampTo(-60, 0.05); } catch(e) {} }
+  if (state.rumbleGain) { try { state.rumbleGain.gain.rampTo(0, 0.05); } catch(e) {} }
   updateButtonUI();
   setStatus('Stopped.');
 }
@@ -781,8 +784,9 @@ function bindButtons() {
     // If switching to a different driver, stop first, then rebuild driver state,
     // then re-init audio (setActiveDriver calls stopPlayback which sets toneStarted=false)
     if (driver && driver !== state.activeDriver) {
-      setActiveDriver(driver);            // stops playback + redraws chart for new driver
-      await ensureToneStarted();          // AFTER stop so fresh oscillators are created
+      setActiveDriver(driver);            // stops RAF loop + redraws chart for new driver
+      state.toneStarted = false;          // force node rebuild for new driver session
+      await ensureToneStarted();
       setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
       startPlayback();
       return;
