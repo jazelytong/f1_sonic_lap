@@ -685,12 +685,7 @@ function setAudioFromIndex(idx) {
 //  PLAYBACK LOOP
 // ══════════════════════════════════════════════════════════════════════
 function startPlayback() {
-  // Cancel any existing RAF loop without killing audio nodes
-  if (state.playbackRAF) {
-    cancelAnimationFrame(state.playbackRAF);
-    state.playbackRAF = null;
-  }
-  state.isPlaying = false;
+  if (state.isPlaying) stopPlayback();
   const tel = getTel();
   if (!tel) return;
 
@@ -743,10 +738,11 @@ function stopPlayback() {
     cancelAnimationFrame(state.playbackRAF);
     state.playbackRAF = null;
   }
-  // Silence audio params without stopping/disposing oscillators
-  // (Tone.js oscillators can't be restarted once stopped — disposal is handled by ensureToneStarted)
-  if (masterVol) { try { masterVol.volume.rampTo(-60, 0.05); } catch(e) {} }
-  if (state.rumbleGain) { try { state.rumbleGain.gain.rampTo(0, 0.05); } catch(e) {} }
+  // Cut audio instantly — no fade, no linger
+  if (synth) { try { synth.stop(); } catch(e) {} }
+  if (rumble) { try { rumble.stop(); } catch(e) {} }
+  if (state.rumbleGain) state.rumbleGain.gain.cancelScheduledValues(Tone.now());
+  state.toneStarted = false; // force re-start next time so oscillators restart cleanly
   updateButtonUI();
   setStatus('Stopped.');
 }
@@ -781,17 +777,15 @@ function setActiveDriver(driver) {
 
 function bindButtons() {
   const handleToggle = async (driver) => {
-    // If switching to a different driver, stop first, then rebuild driver state,
-    // then re-init audio (setActiveDriver calls stopPlayback which sets toneStarted=false)
+    // If switching to a different driver, always stop then start fresh
     if (driver && driver !== state.activeDriver) {
-      setActiveDriver(driver);            // stops RAF loop + redraws chart for new driver
-      state.toneStarted = false;          // force node rebuild for new driver session
       await ensureToneStarted();
+      setActiveDriver(driver);
       setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
       startPlayback();
       return;
     }
-    // Same driver (or no driver arg = in-card play button): toggle play/stop
+    // Same driver (or no driver arg = in-card play button): toggle play/pause
     if (state.isPlaying) {
       stopPlayback();
     } else {
