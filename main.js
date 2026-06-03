@@ -774,18 +774,18 @@ function setActiveDriver(driver) {
   rebuildTelemetry();
   updateTrackDot(0);
 }
-
 function bindButtons() {
   const handleToggle = async (driver) => {
-    // If switching to a different driver, always stop then start fresh
+    // If switching to a different driver, switch first, then start fresh
     if (driver && driver !== state.activeDriver) {
-      await ensureToneStarted();
       setActiveDriver(driver);
+      await ensureToneStarted();
       setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
       startPlayback();
       return;
     }
-    // Same driver (or no driver arg = in-card play button): toggle play/pause
+
+    // Same driver: toggle play/pause
     if (state.isPlaying) {
       stopPlayback();
     } else {
