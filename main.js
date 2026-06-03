@@ -742,7 +742,8 @@ function stopPlayback() {
   if (synth) { try { synth.stop(); } catch(e) {} }
   if (rumble) { try { rumble.stop(); } catch(e) {} }
   if (state.rumbleGain) state.rumbleGain.gain.cancelScheduledValues(Tone.now());
-  state.toneStarted = false; // force re-start next time so oscillators restart cleanly
+  // Reset toneStarted so ensureToneStarted() will rebuild fresh oscillators on next play
+  state.toneStarted = false;
   updateButtonUI();
   setStatus('Stopped.');
 }
@@ -777,15 +778,16 @@ function setActiveDriver(driver) {
 
 function bindButtons() {
   const handleToggle = async (driver) => {
-    // If switching to a different driver, always stop then start fresh
+    // If switching to a different driver, stop first, then rebuild driver state,
+    // then re-init audio (setActiveDriver calls stopPlayback which sets toneStarted=false)
     if (driver && driver !== state.activeDriver) {
-      await ensureToneStarted();
-      setActiveDriver(driver);
+      setActiveDriver(driver);            // stops playback + redraws chart for new driver
+      await ensureToneStarted();          // AFTER stop so fresh oscillators are created
       setStatus(`Playing ${driver === 'VER' ? 'Verstappen' : 'Perez'}…`);
       startPlayback();
       return;
     }
-    // Same driver (or no driver arg = in-card play button): toggle play/pause
+    // Same driver (or no driver arg = in-card play button): toggle play/stop
     if (state.isPlaying) {
       stopPlayback();
     } else {
