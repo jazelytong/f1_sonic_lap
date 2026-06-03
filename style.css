@@ -444,3 +444,12 @@ footer {
   .readout { grid-template-columns: 1fr 1fr; }
   main { padding: 24px 16px 60px; }
 }
+
+.driver-context {
+  max-width: 620px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: -6px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
