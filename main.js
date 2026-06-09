@@ -27,6 +27,8 @@ let state = {
   playbackStartTime: null,
   playbackStartIndex: 0,
   toneStarted: false,
+  loopStart: null,
+  loopEnd: null,
 };
 
 // ── Tone.js nodes ─────────────────────────────────────────────────────
@@ -102,8 +104,8 @@ function buildTelemetryChart() {
 
   const W = container.clientWidth || 900;
   const laneH = 80;
-  const laneGap = 6;
-  const marginL = 56, marginR = 16, marginT = 10, marginB = 36;
+  const laneGap = 24; // Increased gap for labels
+  const marginL = 50, marginR = 16, marginT = 20, marginB = 36;
   const lanes = [
     { key: 'rpm',      label: 'RPM',      color: COLOR.rpm,       fill: false },
     { key: 'throttle', label: 'Throttle %', color: COLOR.throttle, fill: true },
@@ -145,12 +147,11 @@ function buildTelemetryChart() {
       .attr('class', 'axis')
       .call(d3.axisLeft(yScale).ticks(3));
 
-    // Lane label
+    // Lane label (now above the lane)
     lg.append('text')
       .attr('class', 'lane-label')
-      .attr('x', -marginL + 2)
-      .attr('y', laneH / 2)
-      .attr('dominant-baseline', 'middle')
+      .attr('x', 0)
+      .attr('y', -6)
       .attr('text-anchor', 'start')
       .text(lane.label);
 
@@ -187,6 +188,30 @@ function buildTelemetryChart() {
       .attr('d', lineGen);
   });
 
+  // Data-driven annotations
+  const annG = g.append('g').attr('class', 'tel-annotations').style('pointer-events', 'none');
+  if (state.activeDriver === 'VER') {
+    const tAnn = 5.5;
+    annG.append('line')
+      .attr('x1', xScale(tAnn)).attr('x2', xScale(tAnn))
+      .attr('y1', 0).attr('y2', totalH - marginT - marginB)
+      .attr('stroke', COLOR.gold).attr('stroke-dasharray', '4 2').attr('opacity', 0.5);
+    annG.append('text')
+      .attr('x', xScale(tAnn) + 6).attr('y', -10)
+      .attr('fill', COLOR.gold).attr('font-size', '10px').attr('font-weight', 600)
+      .text('VER: Smooth 100% throttle through Eau Rouge');
+    } else {
+    const tAnn = 6.8;
+    annG.append('line')
+      .attr('x1', xScale(tAnn)).attr('x2', xScale(tAnn))
+      .attr('y1', 0).attr('y2', totalH - marginT - marginB)
+      .attr('stroke', COLOR.gold).attr('stroke-dasharray', '4 2').attr('opacity', 0.5);
+    annG.append('text')
+      .attr('x', xScale(tAnn) + 6).attr('y', -30)
+      .attr('fill', COLOR.gold).attr('font-size', '10px').attr('font-weight', 600)
+      .text('PER: Throttle correction/lift');
+  }
+
   // Playhead group
   const playheadG = g.append('g').attr('class', 'playhead-g').style('pointer-events', 'none');
   playheadG.append('line')
@@ -195,12 +220,32 @@ function buildTelemetryChart() {
     .attr('y2', totalH - marginT - marginB);
   playheadG.attr('transform', 'translate(-9999,0)');
 
-  // Hover overlay (full chart height)
-  const overlay = g.append('rect')
-    .attr('class', 'hover-overlay')
-    .attr('x', 0).attr('y', 0)
-    .attr('width', innerW)
-    .attr('height', totalH - marginT - marginB);
+  // Brush-to-Loop and Hover interaction
+  const brush = d3.brushX()
+    .extent([[0, 0], [innerW, totalH - marginT - marginB]])
+    .on('start brush end', function(event) {
+      if (!event.selection) {
+        state.loopStart = null;
+        state.loopEnd = null;
+        return;
+      }
+      const [x0, x1] = event.selection;
+      state.loopStart = xScale.invert(x0);
+      state.loopEnd = xScale.invert(x1);
+
+      // Snap playhead to start of loop if not playing
+      if (!state.isPlaying) {
+        const idx = getIndexAtX(x0);
+        state.playbackIndex = idx;
+        movePlayhead(idx);
+        updateReadout(idx);
+        updateTrackDot(idx);
+      }
+    });
+
+  const brushG = g.append('g')
+    .attr('class', 'tel-brush')
+    .call(brush);
 
   function getIndexAtX(px) {
     const tVal = xScale.invert(px);
@@ -212,20 +257,23 @@ function buildTelemetryChart() {
     return best;
   }
 
-  overlay.on('mousemove', function (event) {
-    const [px] = d3.pointer(event, this);
-    const idx = getIndexAtX(px);
-    movePlayhead(idx);
-    updateReadout(idx);
-  });
-
-  overlay.on('click', function (event) {
-    const [px] = d3.pointer(event, this);
-    const idx = getIndexAtX(px);
-    state.playbackIndex = idx;
-    movePlayhead(idx);
-    updateReadout(idx);
-  });
+  // Bind hover/click to the brush overlay to maintain scrubbing
+  brushG.select('.overlay')
+    .on('mousemove', function (event) {
+      const [px] = d3.pointer(event, this);
+      const idx = getIndexAtX(px);
+      movePlayhead(idx);
+      updateReadout(idx);
+      updateTrackDot(idx);
+    })
+    .on('click', function (event) {
+      const [px] = d3.pointer(event, this);
+      const idx = getIndexAtX(px);
+      state.playbackIndex = idx;
+      movePlayhead(idx);
+      updateReadout(idx);
+      updateTrackDot(idx);
+    });
 
   telChart = { xScale, playheadG, innerW, totalH, marginT, marginB };
 }
@@ -343,6 +391,27 @@ function buildTrackMap() {
     .attr('fill', '#888').attr('font-size', 8).attr('text-anchor', 'end')
     .attr('font-family', "'Barlow Condensed', sans-serif")
     .text(`${Math.round(sMax)} km/h`);
+
+  // Landmarks
+  const landmarks = [
+    { t: 5.5, label: 'Eau Rouge', dx: -18, dy: -8 },
+    { t: 38.0, label: 'Speaker\'s', dx: 12, dy: 4 }
+  ];
+  landmarks.forEach(lm => {
+    let best = 0, bestDist = Infinity;
+    pos.forEach((p, i) => {
+      const d = Math.abs(p.t - lm.t);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    const p = pos[best];
+    const lx = toX(p.x), ly = toY(p.y);
+    svg.append('circle').attr('cx', lx).attr('cy', ly).attr('r', 2).attr('fill', '#fff');
+    svg.append('text')
+      .attr('x', lx + lm.dx).attr('y', ly + lm.dy)
+      .attr('fill', '#888').attr('font-size', 8).attr('font-weight', 600)
+      .attr('font-family', "'Barlow Condensed', sans-serif")
+      .text(lm.label);
+  });
 
   trackChart = { pos, dot, toX, toY };
 }
@@ -546,6 +615,29 @@ function buildDeltaChart() {
   g.append('path').datum(deltaData)
     .attr('fill', 'none').attr('stroke', '#ccc').attr('stroke-width', 1.5).attr('d', lineGen);
 
+  // Annotations for Eau Rouge
+  const annotations = [
+    { dist: 0.85, label: 'Eau Rouge' },
+    { dist: 2.52, label: 'Speaker\'s' }
+  ];
+
+  annotations.forEach(a => {
+    const x = xScale(a.dist);
+    const ag = g.append('g').attr('class', 'chart-annotation').style('opacity', 0.6);
+    ag.append('line')
+      .attr('x1', x).attr('x2', x)
+      .attr('y1', 0).attr('y2', innerH)
+      .attr('stroke', '#888').attr('stroke-dasharray', '2 2');
+    ag.append('text')
+      .attr('x', x)
+      .attr('y', -10)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#888')
+      .attr('font-size', '10px')
+      .attr('font-family', "'Barlow Condensed', sans-serif")
+      .text(a.label);
+  });
+
   // Legend
   const leg = g.append('g').attr('transform', `translate(${innerW - 105}, -40)`);
   
@@ -693,7 +785,7 @@ function startPlayback() {
   state.playbackStartTime = performance.now();
   state.playbackStartIndex = state.playbackIndex;
 
-  const startT = tel[state.playbackIndex].t;
+  let currentStartT = tel[state.playbackIndex].t;
   const endT = tel[tel.length - 1].t;
 
   updateButtonUI();
@@ -702,9 +794,16 @@ function startPlayback() {
     if (!state.isPlaying) return;
 
     const elapsed = (performance.now() - state.playbackStartTime) / 1000;
-    const t = startT + elapsed;
+    let t = currentStartT + elapsed;
 
-    if (t >= endT) {
+    // Loop logic
+    if (state.loopStart !== null && state.loopEnd !== null) {
+      if (t >= state.loopEnd) {
+        state.playbackStartTime = performance.now();
+        currentStartT = state.loopStart;
+        t = currentStartT;
+      }
+    } else if (t >= endT) {
       stopPlayback();
       state.playbackIndex = 0;
       movePlayhead(0);

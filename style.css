@@ -318,6 +318,18 @@ h3 {
   pointer-events: none;
 }
 
+.tel-brush .selection {
+  fill: white;
+  fill-opacity: 0.15;
+  stroke: white;
+  stroke-width: 1px;
+}
+
+.tel-brush .handle {
+  fill: white;
+  fill-opacity: 0.8;
+}
+
 .hover-overlay {
   fill: transparent;
   cursor: crosshair;
@@ -411,11 +423,18 @@ h3 {
   gap: 40px;
 }
 
-.writeup p {
+.writeup p, .rationale-item p {
   font-size: 15px;
   color: #aaa;
   line-height: 1.7;
   font-weight: 300;
+}
+
+/* ===== RATIONALE ===== */
+.rationale-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
 }
 
 /* ===== FOOTER ===== */
@@ -434,6 +453,7 @@ footer {
 @media (max-width: 900px) {
   .card-grid { grid-template-columns: 1fr; }
   .writeup-grid { grid-template-columns: 1fr; }
+  .rationale-grid { grid-template-columns: 1fr; }
   .readout { grid-template-columns: repeat(3, 1fr); }
   h1 { font-size: clamp(44px, 12vw, 80px); }
 }
