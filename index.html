@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>F1 Sonic Lap — Hear the Difference</title>
+  <title>F1 Sonic Lap - Hear the Difference</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -17,6 +17,13 @@
 
 <body>
 
+  <!-- TOP PROJECT LINKS -->
+  <div class="top-project-links">
+    <a href="https://www.youtube.com/watch?v=cPXycAxLeNw&feature=youtu.be" target="_blank" rel="noopener noreferrer">Project Video</a>
+    <span>·</span>
+    <a href="https://github.com/jazelytong/f1_sonic_lap" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+  </div>
+
   <!-- HERO -->
   <section class="hero">
     <div class="hero-inner">
@@ -24,8 +31,10 @@
       <p class="team-names">Jazely Tong · Harshatha Prasanna · Aryan Nath</p>
 
       <h1>Can you <em>hear</em><br>who drove faster?</h1>
-      <p class="subtitle">Formula 1 telemetry turned into sound. RPM becomes pitch, throttle becomes volume, braking
-        becomes percussion. Listen — then look at the data.</p>
+      <p class="subtitle">
+        Formula 1 telemetry turned into sound. RPM becomes pitch, throttle becomes volume, braking
+        becomes percussion. Listen, then look at the data.
+      </p>
 
       <div class="controls-hero">
         <button id="playA" class="btn btn-ver">▶ Verstappen</button>
@@ -33,7 +42,7 @@
       </div>
 
       <p class="driver-context">
-        Verstappen and Perez were Red Bull teammates driving the same car, so their laps are easier to compare. The difference comes more from driving style than from the car itself.
+        Verstappen and Perez were Red Bull teammates driving the same car, so their laps are easier to compare. The difference comes more from driving style than from the car itself. This project asks whether smoother inputs can explain why one lap is faster.
       </p>
 
       <p id="status" class="status-msg">Loading telemetry data…</p>
@@ -49,8 +58,10 @@
         <span class="section-num">01</span>
         <div>
           <h2>Telemetry Player</h2>
-          <p class="section-desc">RPM → pitch &nbsp;·&nbsp; Throttle → volume &nbsp;·&nbsp; Brake → rumble &nbsp;·&nbsp;
-            Hover to scrub through the lap</p>
+          <p class="section-desc">
+            RPM → pitch &nbsp;·&nbsp; Throttle → volume &nbsp;·&nbsp; Brake → rumble &nbsp;·&nbsp;
+            Hover to scrub through the lap
+          </p>
         </div>
       </div>
 
@@ -84,6 +95,7 @@
 
     <!-- SECTION 2: SECONDARY CHARTS -->
     <section class="card-grid">
+
       <!-- SCATTER -->
       <div class="card" id="section-scatter">
         <div class="section-header">
@@ -94,7 +106,8 @@
           </div>
         </div>
         <div id="scatter-chart"></div>
-        <p class="annotation">↗ Smoother drivers cluster toward the bottom-left. VER and PER are highlighted in gold.
+        <p class="annotation">
+          ↗ Smoother drivers cluster toward the bottom-left. VER and PER are highlighted in gold.
         </p>
       </div>
 
@@ -123,7 +136,8 @@
       <div class="writeup-grid">
         <div>
           <h3>What have we done so far?</h3>
-          <p>We built a working web prototype for F1 Sonic Lap that loads Formula 1 telemetry from the 2024 Belgian
+          <p>
+            We built a working web prototype for F1 Sonic Lap that loads Formula 1 telemetry from the 2024 Belgian
             Grand Prix qualifying session and displays it across four synchronized visualizations. The telemetry player
             renders RPM, throttle, brake, and gear as stacked D3 charts with a shared interactive playhead that responds
             to hover and click. A Tone.js audio engine maps RPM to oscillator pitch (110–440 Hz), throttle to output
@@ -134,11 +148,14 @@
             with VER and PER highlighted, previewing the central statistical claim of the finished project. A delta
             chart shows the cumulative time gap around the lap, identifying the corners where Verstappen builds his
             advantage. All charts are linked through a shared time index so any interaction propagates across the page
-            simultaneously.</p>
+            simultaneously.
+          </p>
         </div>
+
         <div>
           <h3>What will be the most challenging part to design and why?</h3>
-          <p>The most challenging aspect will be making the audio feel analytically meaningful rather than merely
+          <p>
+            The most challenging aspect will be making the audio feel analytically meaningful rather than merely
             decorative. The sonification must teach the viewer something precise about driver behaviour, specifically
             that Verstappen's inputs are smoother and more deliberate while remaining perceptually intuitive to someone
             with no musical training. Achieving this requires carefully calibrated mapping functions: too compressed a
@@ -147,9 +164,10 @@
             the D3 animation frame loop, causing the minimap dot and the telemetry playhead to lag behind the sound. The
             final version will need a phase-locked loop strategy to keep visual and audio clocks aligned. Beyond the
             technical challenge, the narrative arc must guide a first-time viewer from hearing the difference, to seeing
-            the difference in the charts, to understanding why smoothness produces speed — all without a wall of
+            the difference in the charts, to understanding why smoothness produces speed, all without a wall of
             explanatory text. Annotations, progressive disclosure, and a well-designed blind-test interaction will be
-            the key design levers for the next iteration.</p>
+            the key design levers for the next iteration.
+          </p>
         </div>
       </div>
     </section>
@@ -167,26 +185,49 @@
       <div class="rationale-grid">
         <div class="rationale-item">
           <h3>Mapping RPM to Pitch</h3>
-          <p>Engine speed translates directly to sound frequency in reality. High RPMs produce higher pitched screams
+          <p>
+            Engine speed translates directly to sound frequency in reality. High RPMs produce higher pitched screams
             while low RPMs create deep rumbles. This mapping leverages natural intuition to represent engine intensity
             without requiring a legend. It allows the listener to identify gear shifts and peak power through familiar
-            auditory cues.</p>
+            auditory cues.
+          </p>
         </div>
+
         <div class="rationale-item">
           <h3>Mapping Throttle to Volume</h3>
-          <p>The force of acceleration is best represented by the presence of sound. Full throttle corresponds to
+          <p>
+            The force of acceleration is best represented by the presence of sound. Full throttle corresponds to
             maximum volume to simulate the roar of a car under load. Lifting off the pedal reduces the sound to a
             whisper. This creates a tactile sense of the driver's input where the loudness directly correlates with the
-            energy being applied to the track.</p>
+            energy being applied to the track.
+          </p>
         </div>
+
         <div class="rationale-item">
           <h3>Expressiveness and Texture</h3>
-          <p>Standard charts often flatten the aggressive nature of racing. Sonification adds a layer of texture that
+          <p>
+            Standard charts often flatten the aggressive nature of racing. Sonification adds a layer of texture that
             captures micro-corrections and smooth transitions. By combining pitch and volume, the system conveys the
             struggle for grip and the rhythm of a lap in a way that static visuals cannot. The result is an expressive
-            representation of raw telemetry data.</p>
+            representation of raw telemetry data.
+          </p>
         </div>
       </div>
+    </section>
+
+    <!-- FINAL TAKEAWAY -->
+    <section class="card" id="section-takeaway">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <div>
+          <h2>Final Takeaway</h2>
+          <p class="section-desc">What everyone should learn from this visualization</p>
+        </div>
+      </div>
+
+      <p>
+        Speed is not only about pressing the throttle more. In this lap, the faster driver gains time through smoother, more controlled inputs. By turning telemetry into sound and linking it to the charts, this project makes the difference easier to hear, see, and understand.
+      </p>
     </section>
 
   </main>

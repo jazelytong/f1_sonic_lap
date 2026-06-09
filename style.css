@@ -26,6 +26,36 @@ body {
   overflow-x: hidden;
 }
 
+/* ===== TOP PROJECT LINKS ===== */
+.top-project-links {
+  position: absolute;
+  top: 18px;
+  right: 32px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.top-project-links a {
+  color: #9a9a9a;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+
+.top-project-links a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.top-project-links span {
+  color: #555;
+}
+
 /* ===== HERO ===== */
 .hero {
   position: relative;
@@ -423,7 +453,7 @@ h3 {
   gap: 40px;
 }
 
-.writeup p, .rationale-item p {
+.writeup p, .rationale-item p, #section-takeaway p {
   font-size: 15px;
   color: #aaa;
   line-height: 1.7;
@@ -449,6 +479,16 @@ footer {
   text-transform: uppercase;
 }
 
+/* ===== DRIVER CONTEXT ===== */
+.driver-context {
+  max-width: 620px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: -6px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .card-grid { grid-template-columns: 1fr; }
@@ -459,17 +499,19 @@ footer {
 }
 
 @media (max-width: 600px) {
-  .hero { padding: 40px 20px; }
+  .hero { padding: 70px 20px 40px; }
   .card { padding: 20px; }
   .readout { grid-template-columns: 1fr 1fr; }
   main { padding: 24px 16px 60px; }
-}
 
-.driver-context {
-  max-width: 620px;
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: -6px;
-  margin-bottom: 14px;
-  line-height: 1.4;
+  .top-project-links {
+    top: 16px;
+    left: 20px;
+    right: auto;
+    font-size: 11px;
+  }
+
+  .top-project-links a {
+    font-size: 11px;
+  }
 }
